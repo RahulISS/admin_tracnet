@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Models\API;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class RawData extends Model
+{
+    protected $connection = 'mongodb2';
+    use HasFactory;
+}
