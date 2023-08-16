@@ -18,7 +18,28 @@ use App\Models\userPermission;
 
 class CustomersController extends Controller
 {
-    //
+
+    /**
+     * User ajax list for datatables
+     */
+
+     public function userAjaxData(Request $request){
+        if ($request->ajax()) {
+            $data =  User::where('is_deleted', 0)->get();
+            return Datatables::of($data)
+                ->addIndexColumn()
+                ->addColumn('action', function($row){
+                    $edit=route('editmodule',$row->id);
+                    $delete=route('delete.module',$row->id);
+                    $actionBtn = '<a href="'.$edit.'" title="edit"><i class="fa fa-pencil" style="color:green"></i></a>&nbsp;&nbsp; <a href="'.$delete.'" title="delete"><i class="fa fa-trash" style="color:red"></i></a>';      
+                    return $actionBtn;
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+    }
+
+
     public function customer_list()
     {
         $data['customers'] = User::where('is_deleted', 0)->with('userPermission', 'userPermission.projects', 'userPermission.portals', 'userPermission.roles')->get();

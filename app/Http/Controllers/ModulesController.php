@@ -19,7 +19,26 @@ class ModulesController extends Controller
      */
     public function moduleAjaxData(Request $request){
         if ($request->ajax()) {
-            $data =  Modules::where('is_deleted', 0)->get();
+            $data =  Modules::where('is_deleted', 0)->where('module_id',0)->get();
+            return Datatables::of($data)
+                ->addIndexColumn()
+                ->addColumn('action', function($row){
+                    $edit=route('editmodule',$row->id);
+                    $delete=route('delete.module',$row->id);
+                    $actionBtn = '<a href="'.$edit.'" title="edit"><i class="fa fa-pencil" style="color:green"></i></a>&nbsp;&nbsp; <a href="'.$delete.'" title="delete"><i class="fa fa-trash" style="color:red"></i></a>';      
+                    return $actionBtn;
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+    }
+
+    public function subModuleAjaxData(Request $request){
+        if ($request->ajax()) {
+            $data =  Modules::where('is_deleted', 0)->where('module_id','!=',0)->get();
+            foreach($data as $d){
+                $d->module_name=Module::where('_id',$d->module_id)->value('name');
+            }
             return Datatables::of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function($row){
@@ -145,7 +164,6 @@ class ModulesController extends Controller
             $deleteCus = Modules::where(['_id' => $id])
             ->update([
                 'is_deleted' => 1
-               
             ]);
             if($deleteCus){
 

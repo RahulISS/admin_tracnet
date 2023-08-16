@@ -1,3 +1,4 @@
+
 @extends('layouts.default')
 @section('content')
 <style>
@@ -140,90 +141,176 @@
             width: 100%;
             max-width: 1200px;
         }
+
+        /* Hide submodule lists by default */
+        .submoduleList {
+            display: block;
+        }
+
+        /* Style the folder symbol */
+        .folderSymbol {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        /* Show submodule list when the parent module is checked */
+        .moduleCheckbox:checked ~ .submoduleList {
+            display: block;
+        }
+
+        .radio-row {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Adjust spacing as needed */
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Adjust spacing as needed */
+        }
+
+
+        
+
+        
     </style>
     <div class="page-wrapper">
         <div class="page-content">
             <!--breadcrumb-->
             <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
                 <div class="breadcrumb-title pe-3">Permissions</div>
-                <div class="ps-3">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0 p-0">
-                            <li class="breadcrumb-item"><a href="{{route('adminDashboard')}}"><i class="bx bx-home-alt"></i></a>
-                            </li>
-                            <li class="breadcrumb-item"><a href="{{route('permissionlist')}}">Permission List</a>
-                            </li>
-                            <li class="breadcrumb-item active" aria-current="page">@if (isset($permissions)) Edit @else Add @endif Permission</li>
-                        </ol>
-                    </nav>
+                    <div class="ps-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0 p-0">
+                                <li class="breadcrumb-item"><a href="{{route('adminDashboard')}}"><i class="bx bx-home-alt"></i></a>
+                                </li>
+                                <li class="breadcrumb-item"><a href="{{route('permissionlist')}}">Permission List</a>
+                                </li>
+                                <li class="breadcrumb-item active" aria-current="page">@if (isset($permissions)) Edit @else Add @endif Permission</li>
+                            </ol>
+                        </nav>
+                    </div>
                 </div>
-            </div>
-            <br>
+                <br>
             <!--end breadcrumb-->
-           
             <div class="row">
                 <div class="col-xl-11 mx-auto">
                     <div class="d-sm-flex align-items-center">
-                        <h6 class="mb-0 text-uppercase">@if (isset($permissions)) Edit @else Add @endif Permission</h6>
+                        <h6 class="mb-0">@if (isset($permissions)) Edit @else Add @endif Permission</h6>
                         <a href="{{route('permissionlist')}}" class="btn btn-primary ms-auto"><i class="bx bx-chevron-left"></i>Back</a>
                     </div>                    
                     <hr/>
                     <div class="card border-top border-0 border-4 border-primary">
                         <div class="card-body p-5">
-                            @if (isset($permissions))
+                        @if (isset($permissions))
                             <form class="row g-3" action="{{route('update.permission',$role->id)}}" method="post">
-                            @else
+                        @else
                             <form class="row g-3" action="{{route('create.permission')}}" method="post">
-                            @endif
-
+                        @endif
                             @csrf
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <label for="inputname" class="form-label">Project</label>
-                                        <select id="projects" name="projects" class="form-select" required>
-                                            <option value='' disabled selected>Choose...</option>
-                                            @foreach($projectlist as $row)
-                                            <option value="{{$row->id}}">{{$row->name}}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <hr>
                                 <div class="containrow">
                                     <div class="row col-md-12 mt-3">
+                                        <div class="col-md-3 mb-3">
+                                            <label for="inputname" class="form-label">Project</label>
+                                            <select id="projects" name="projects" class="form-select" required>
+                                                <option value='' disabled selected>Choose...</option>
+                                                @foreach($projectlist as $row)
+                                                <option value="{{$row->id}}">{{$row->name}}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     
                                         <div class="col-md-3 mb-3">
                                             <label for="inputportal" class="form-label">Portal</label>
                                             <select id="multiple_portal" name="portal[]" class="form-select multiple_portal" required>
                                                 <option value='' disabled>No record found...</option>
-
                                             </select>
                                         </div>
+
                                         <div class="col-md-3 mb-3 border-end">
                                             <label for="inputname" class="form-label">Role</label>
                                             <select id="multiple_role" name="role[]" class="form-select" required>
                                                 <option value='' disabled>No record found...</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-5 ">
-                                        
+
+                                        <div class="col-md-3">
                                             <div class="block-right">
                                             <label for="inputportal" class="form-label">Modules</label>
                                             <br><br>
-                                                <ul class="ul_li_herc modulelist">
-                                                   
-                                                </ul>
-                                            </div>
-                                            
+                                            <ul id="treeview">
+                                                @foreach ($moduleslist as $module)
+                                                    <li>
+                                                        <div class="moduleHeader">
+                                                            <input type="checkbox" name="module[]" class="moduleCheckbox parentCheckbox" id="module_{{ $module->id }}">
+                                                            <label class="moduleLabel" for="module_{{ $module->id }}">
+                                                                <span class="folderSymbol">&#128193;</span> <!-- Folder Symbol -->
+                                                                {{ $module->name }}
+                                                            </label>
+                                                        </div>
+                                                        <ul class="submoduleList"> <!-- Container for submodule list -->
+                                                            @foreach ($module->submodules as $submodule)
+                                                                <li>
+                                                                    <input type="checkbox" name="submodule[]" class="submoduleCheckbox" data-parent="module_{{ $module->id }}" id="submodule_{{ $submodule->id }}">
+                                                                    <label class="submoduleLabel" for="submodule_{{ $submodule->id }}">{{ $submodule->name }}</label>
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
                                         </div>
-                                        <div class="col-md-1"><a href="javascript:void(0)" class="btn btn-primary add_form_field px-2 mt-3">+ Add</a></div>
+                                        </div>
+                                        {{--<div class="col-md-1"><a href="javascript:void(0)" class="btn btn-primary add_form_field px-2 mt-3">+ Add</a></div>--}}
                                     </div>
-                                 
                                 </div>
-                                <div class="col-12 text-end"><button type="submit" class="btn btn-primary px-4 mt-3">Submit</button></div>
+
+                                <div class="row col-12">
+                                    <div class="col-md-3 mb-3">
+                                        <label for="inputname" class="form-label">Site Setting Configuration</label>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" name="site_setting[]" id="addSitePermission" value="add">
+                                            <label for="addSitePermission">Add</label>
+                                            
+                                            <input type="checkbox" name="site_setting[]" id="editSitePermission" value="edit">
+                                            <label for="editSitePermission">Edit</label>
+                                            
+                                            <input type="checkbox" name="site_setting[]" id="deleteSitePermission" value="delete">
+                                            <label for="deleteSitePermission">Delete</label>
+                                            
+                                            <input type="checkbox" name="site_setting[]" id="viewPermission" value="view">
+                                            <label for="viewSitePermission">View</label>
+                                        </div>
+                                    </div>
+                                   
+
+                                    <div class="col-md-3 mb-3">
+                                        <label for="inputname" class="form-label">Setting Tab Configuration</label>
+                                        <div class="checkbox-row">
+                                            <input type="checkbox" name="setting_tab" id="addPermission"  value="add">
+                                            <label for="addPermission">Add</label>
+                                            
+                                            <input type="checkbox" name="setting_tab" id="editPermission" value="edit">
+                                            <label for="editPermission">Edit</label>
+                                            
+                                            <input type="checkbox" name="setting_tab" id="deletePermission" value="delete">
+                                            <label for="deletePermission">Delete</label>
+                                            
+                                            <input type="checkbox" name="setting_tab" id="viewPermission" value="view">
+                                            <label for="viewPermission">View</label>
+                                        </div>
+                                    </div>
+
+                                    <input type="hidden" name="sitesettingvalue" id="sitesettingvalue"> 
+                                   
+                                   
+                                </div>
+
+                                <div class="col-12 text-end"><button type="submit" class="btn btn-primary px-4 mt-3">Submit</button>
+                                </div>
                             </form>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -233,50 +320,8 @@
            
 @endsection
 @section('scripts')
-    
-    @if(\Session::get('success'))
     <script>
-        $(document).ready(function(){
-            Lobibox.notify('success', {
-                pauseDelayOnHover: true,
-                size: 'mini',
-                rounded: true,
-                icon: 'bx bx-check-circle',
-                delayIndicator: false,
-                continueDelayOnInactiveTab: false,
-                position: 'top right',
-                msg: '{{ \Session::get("success") }}'
-            });
-        });
-    </script>
-    @endif
-    {{ \Session::forget('success') }}
-    @if(\Session::get('error'))
-    <script>
-        $(document).ready(function(){
-            Lobibox.notify('error', {
-                pauseDelayOnHover: true,
-                size: 'mini',
-                rounded: true,
-                delayIndicator: false,
-                icon: 'bx bx-x-circle',
-                continueDelayOnInactiveTab: false,
-                position: 'top right',
-                msg: '{{ \Session::get("error") }}'
-            });
-        });
-        $('.multiple-select').select2({
-            theme: 'bootstrap4',
-            width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
-            placeholder: $(this).data('placeholder'),
-            allowClear: Boolean($(this).data('allow-clear')),
-        });
-    </script>
-  
-    @endif
-    <script>
-                     
-        $(document).ready(function() {
+          $(document).ready(function() {
              
             getrole();
             var max_fields = 6;
@@ -309,9 +354,27 @@
                                 '<div class="block-right">'+
                                 '<label for="inputportal" class="form-label">Modules</label>'+
                                 '<br><br>'+
-                                    '<ul class="ul_li_herc modulelist'+x+'">'+
-                                        
-                                    '</ul>'+
+                                `<ul id="treeview">
+                                    @foreach ($moduleslist as $module)
+                                        <li>
+                                            <div class="moduleHeader">
+                                                <input type="checkbox" name="module[]" class="moduleCheckbox parentCheckbox" id="module_{{ $module->id }}">
+                                                <label class="moduleLabel" for="module_{{ $module->id }}">
+                                                    <span class="folderSymbol">&#128193;</span>
+                                                    {{ $module->name }}
+                                                </label>
+                                            </div>
+                                            <ul class="submoduleList">
+                                                @foreach ($module->submodules as $submodule)
+                                                    <li>
+                                                        <input type="checkbox" class="submoduleCheckbox" name="submodule[]" data-parent="module_{{ $module->id }}" id="submodule_{{ $submodule->id }}">
+                                                        <label class="submoduleLabel" for="submodule_{{ $submodule->id }}">{{ $submodule->name }}</label>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </li>
+                                    @endforeach
+                                </ul>`+
                                 '</div>'+
                             '</div>'+
                             '<div class="col-md-1"><button type="submit" class="btn btn-danger deleterow px-2 mt-3"><i class="bx bx-trash-alt"></i></button></div>'+
@@ -384,18 +447,93 @@
                 },
                 type : 'POST',
                 success : function(result){
+                    console.log("check the result",result.module);
                     $('#multiple_role'+pr).empty();
                     $('.modulelist'+pr).html(result.module);
                     var roledata = result.role;          
                     roledata.forEach(function(item) {
-                       
                         $('#multiple_role'+pr).append($('<option value="'+item._id+'">'+item.name+'</option>'));
                     });
                    
                 }
             });
         }
- 
-    </script>
+
+        const parentCheckboxes = document.querySelectorAll('.parentCheckbox');
+        const submoduleCheckboxes = document.querySelectorAll('.submoduleCheckbox');
+
+        parentCheckboxes.forEach(parentCheckbox => {
+        parentCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const parentCheckboxId = this.id;
+
+            submoduleCheckboxes.forEach(submoduleCheckbox => {
+                if (submoduleCheckbox.dataset.parent === parentCheckboxId) {
+                    submoduleCheckbox.checked = isChecked;
+                    submoduleCheckbox.disabled = !isChecked; // Enable/disable submodule checkboxes
+                }
+            });
+        });
+    });
+
+    $(document).ready(function () {
+        // Hide all submodule lists by default
+        // $('.submoduleList').hide();
+        
+        // Toggle submodule list when parent checkbox is clicked
+        $('.parentCheckbox').click(function () {
+            // $(this).closest('li').find('.submoduleList').toggle();
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+    // Get references to the checkboxes
+    var moduleCheckboxes = document.querySelectorAll(".moduleCheckbox");
+    var submoduleCheckboxes = document.querySelectorAll(".submoduleCheckbox");
+
+    // Add a submit event listener to the form
+    var form = document.querySelector("form");
+    form.addEventListener("submit", function(event) {
+        var selectedModuleIds = [];
+        var selectedSubmoduleIds = [];
+
+        // Loop through module checkboxes to get selected module IDs
+        moduleCheckboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                selectedModuleIds.push(checkbox.id.replace("module_", ""));
+            }
+        });
+
+        // Loop through submodule checkboxes to get selected submodule IDs
+        submoduleCheckboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                selectedSubmoduleIds.push(checkbox.id.replace("submodule_", ""));
+            }
+        });
+
+        // Add hidden input fields to the form with the selected IDs
+        selectedModuleIds.forEach(function(moduleId) {
+            var input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "selectedModuleIds[]";
+            input.value = moduleId;
+            form.appendChild(input);
+        });
+
+        selectedSubmoduleIds.forEach(function(submoduleId) {
+            var input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "selectedSubmoduleIds[]";
+            input.value = submoduleId;
+            form.appendChild(input);
+        });
+    });
+});
+
+
+
+
+</script>
+  
 @stop
 

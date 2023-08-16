@@ -36,7 +36,8 @@
 								<thead>
 									<tr>
 										<th>S.No.</th>
-										<th>Module Name</th>
+										<th>Module </th>
+                                        <th>Sub Module</th>
 										<th>Action</th>
 									</tr>
 								</thead>
@@ -48,6 +49,7 @@
 				</div>
                 </div>
             </div>
+            
   
         </div>
     </div>

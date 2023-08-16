@@ -63,3 +63,43 @@
         });
 
     </script>
+      @if(\Session::get('success'))
+    <script>
+        $(document).ready(function(){
+            Lobibox.notify('success', {
+                pauseDelayOnHover: true,
+                size: 'mini',
+                rounded: true,
+                icon: 'bx bx-check-circle',
+                delayIndicator: false,
+                continueDelayOnInactiveTab: false,
+                position: 'top right',
+                msg: '{{ \Session::get("success") }}'
+            });
+        });
+    </script>
+    @endif
+    {{ \Session::forget('success') }}
+    @if(\Session::get('error'))
+    <script>
+        $(document).ready(function(){
+            Lobibox.notify('error', {
+                pauseDelayOnHover: true,
+                size: 'mini',
+                rounded: true,
+                delayIndicator: false,
+                icon: 'bx bx-x-circle',
+                continueDelayOnInactiveTab: false,
+                position: 'top right',
+                msg: '{{ \Session::get("error") }}'
+            });
+        });
+        $('.multiple-select').select2({
+            theme: 'bootstrap4',
+            width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+            placeholder: $(this).data('placeholder'),
+            allowClear: Boolean($(this).data('allow-clear')),
+        });
+    </script>
+  
+    @endif

@@ -141,6 +141,8 @@
             max-width: 1200px;
         }
     </style>
+
+   
     <div class="page-wrapper">
         <div class="page-content">
             <!--breadcrumb-->
@@ -194,14 +196,14 @@
                                     
                                         <div class="col-md-3 mb-3">
                                             <label for="inputportal" class="form-label">Portal</label>
-                                            <select id="multiple_portal" name="portal[]" class="form-select multiple_portal" required>
+                                            <select id="multiple_portal" name="portal" class="form-select multiple_portal" required>
                                                 <option value='' disabled>No record found...</option>
 
                                             </select>
                                         </div>
                                         <div class="col-md-3 mb-3 border-end">
                                             <label for="inputname" class="form-label">Role</label>
-                                            <select id="multiple_role" name="role[]" class="form-select" required>
+                                            <select id="multiple_role" name="role" class="form-select" required>
                                                 <option value='' disabled>No record found...</option>
                                             </select>
                                         </div>
@@ -210,9 +212,51 @@
                                             <div class="block-right">
                                             <label for="inputportal" class="form-label">Modules</label>
                                             <br><br>
-                                                <ul class="ul_li_herc modulelist">
-                                                   
-                                                </ul>
+                                            <!-- Getting module and submodule array -->
+                                           
+                                              
+
+                                                @if($permissions->module_permissions)
+                                                    @php $moduleIds=json_decode($permissions->module_permissions,true); @endphp
+                                                @else
+                                                   @php  $moduleIds=[]; @endphp
+                                                @endif
+
+
+                                                @if($permissions->submodule_permissions)
+                                                    @php $submoduleIds=json_decode($permissions->submodule_permissions,true);  @endphp
+                                                @else
+                                                   @php  $submoduleIds=[]; @endphp
+                                                @endif
+
+                                                
+
+                                          
+                                        
+                                                
+                                            <ul id="treeview">
+                                                
+                                                @foreach ($moduleslist as $module)
+                                                    
+                                                    <li>
+                                                        <div class="moduleHeader">
+                                                            <input type="checkbox" name="module[]" class="moduleCheckbox parentCheckbox" id="module_{{ $module->id }}" @if(in_array($module->id,$moduleIds)) checked @endif>
+                                                            <label class="moduleLabel" for="module_{{ $module->id }}">
+                                                                <span class="folderSymbol">&#128193;</span> <!-- Folder Symbol -->
+                                                                {{ $module->name }}
+                                                            </label>
+                                                        </div>
+                                                        <ul class="submoduleList"> <!-- Container for submodule list -->
+                                                            @foreach ($module->submodules as $submodule)
+                                                                <li>
+                                                                    <input type="checkbox" name="submodule[]" class="submoduleCheckbox" data-parent="module_{{ $module->id }}" id="submodule_{{ $submodule->id }}" @if(in_array($submodule->id,$submoduleIds)) checked @endif>
+                                                                    <label class="submoduleLabel" for="submodule_{{ $submodule->id }}">{{ $submodule->name }}</label>
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
                                             </div>
                                             
                                         </div>
@@ -397,6 +441,77 @@
                 }
             });
         }
+
+    const parentCheckboxes = document.querySelectorAll('.parentCheckbox');
+    const submoduleCheckboxes = document.querySelectorAll('.submoduleCheckbox');
+
+    parentCheckboxes.forEach(parentCheckbox => {
+    parentCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        const parentCheckboxId = this.id;
+
+        submoduleCheckboxes.forEach(submoduleCheckbox => {
+            if (submoduleCheckbox.dataset.parent === parentCheckboxId) {
+                submoduleCheckbox.checked = isChecked;
+                submoduleCheckbox.disabled = !isChecked; // Enable/disable submodule checkboxes
+            }
+        });
+    });
+    });
+
+    $(document).ready(function () {
+        // Hide all submodule lists by default
+        
+        // Toggle submodule list when parent checkbox is clicked
+        $('.parentCheckbox').click(function () {
+            // $(this).closest('li').find('.submoduleList').toggle();
+        });
+    });
+
+    
+        document.addEventListener("DOMContentLoaded", function() {
+    // Get references to the checkboxes
+    var moduleCheckboxes = document.querySelectorAll(".moduleCheckbox");
+    var submoduleCheckboxes = document.querySelectorAll(".submoduleCheckbox");
+
+    // Add a submit event listener to the form
+    var form = document.querySelector("form");
+    form.addEventListener("submit", function(event) {
+        var selectedModuleIds = [];
+        var selectedSubmoduleIds = [];
+
+        // Loop through module checkboxes to get selected module IDs
+        moduleCheckboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                selectedModuleIds.push(checkbox.id.replace("module_", ""));
+            }
+        });
+
+        // Loop through submodule checkboxes to get selected submodule IDs
+        submoduleCheckboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                selectedSubmoduleIds.push(checkbox.id.replace("submodule_", ""));
+            }
+        });
+
+        // Add hidden input fields to the form with the selected IDs
+        selectedModuleIds.forEach(function(moduleId) {
+            var input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "selectedModuleIds[]";
+            input.value = moduleId;
+            form.appendChild(input);
+        });
+
+        selectedSubmoduleIds.forEach(function(submoduleId) {
+            var input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "selectedSubmoduleIds[]";
+            input.value = submoduleId;
+            form.appendChild(input);
+        });
+    });
+});
  
     </script>
 @stop

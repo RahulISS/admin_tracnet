@@ -37,12 +37,18 @@ class PermissionsController extends Controller
             'parent_modules' => array()
         );
 
-        foreach($moduleslist as $row){
-            //creates entry into modules array with current module id ie. $module['modules'][1]
-            $module['modules'][$row['id']] = $row;
-            //creates entry into parent_modules array. parent_modules array contains a list of all modules with children
-            $module['parent_modules'][$row['module_id']][] = $row['id'];
-        } 
+        $moduleslist = Modules::where('is_deleted', 0)->where('module_id',0)->get();
+        foreach($moduleslist as $m){
+            $m->submodules=Modules::where('module_id',$m->_id)->get();
+        }
+      
+        $data['moduleslist']=$moduleslist;
+        // foreach($moduleslist as $row){
+        //     //creates entry into modules array with current module id ie. $module['modules'][1]
+        //     $module['modules'][$row['id']] = $row;
+        //     //creates entry into parent_modules array. parent_modules array contains a list of all modules with children
+        //     $module['parent_modules'][$row['module_id']][] = $row['id'];
+        // } 
 
         $data['module'] =  $this->buildModules(0,$module,0); 
        
@@ -50,12 +56,11 @@ class PermissionsController extends Controller
     }
 
     public function postadd_permission(Request $request){
-        // echo "<pre>"; print_r($request->all()); die;
+        
         $fields = Validator::make($request->all(),[
             'projects' => 'required|string',
             'role' => 'required|array',
             'portal' => 'required|array',
-            'modules' => 'required|array',
         ]);
 
         if ($fields->fails()) {
@@ -65,23 +70,24 @@ class PermissionsController extends Controller
         $customModules = [];
         foreach($request->portal as $key => $row){
             
-            foreach($request->modules[$key] as $keys => $rows){
-                if($rows != 'on'){
-                    $dataArr = [
-                        'module' => $keys,
-                        'access' => $rows
-                    ];
+            // foreach($request->modules[$key] as $keys => $rows){
+            //     if($rows != 'on'){
+            //         $dataArr = [
+            //             'module' => $keys,
+            //             'access' => $rows
+            //         ];
 
-                    array_push($customModules,$dataArr);
-                }
+            //         array_push($customModules,$dataArr);
+            //     }
              
-            }
+            // }
            
             $permission = new Permissions();
             $permission->project_id = $request->projects;
             $permission->portal_id = $row;
             $permission->role_id = $request->role[$key];
-            $permission->module_permissions = json_encode($customModules);
+            $permission->module_permissions = json_encode($request->selectedModuleIds);
+            $permission->submodule_permission = json_encode($request->selectedSubmoduleIds);
             $permission->is_deleted = 0;
             $permission->created_at = now();
             $permission->save();
@@ -104,7 +110,15 @@ class PermissionsController extends Controller
         if(!empty($request->id)){
             $data['projectlist'] = Projects::where(['is_deleted' => 0])->get();
             $data['permissions'] = Permissions::where(['_id' => $request->id])->first();
-           
+
+           $moduleslist = Modules::where('is_deleted', 0)->where('module_id',0)->get();
+
+            foreach($moduleslist as $m){
+                $m->submodules=Modules::where('module_id',$m->_id)->get();
+            }
+      
+            $data['moduleslist']=$moduleslist;
+
             return view('permissions.edit-permissions')->with($data);
         }else{
             return back()->with('error','Invalid request'); 
@@ -113,46 +127,70 @@ class PermissionsController extends Controller
 
     public function update_permission(Request $request, $id)
     {
+
         $fields = Validator::make($request->all(),[
-            'projects' => 'required|string',
-            'role' => 'required|array',
-            'portal' => 'required|array',
-            'modules' => 'required|array',
+            'projects' => 'required',
+            'role' => 'required',
+            'portal' => 'required',
+            'selectedModuleIds' => 'required|array'
         ]);
+        
+      
 
         if ($fields->fails()) {
             return back()->with('error',$fields->errors());   
         }
 
-        $role = Permissions::where('_id', $id)
-                            ->update([
-                                'name' => $request->name,
-                           ]);
+       
         $customModules = [];
-        foreach($request->portal as $key => $row){
-            
-            foreach($request->modules[$key] as $keys => $rows){
-                if($rows != 'on'){
-                    $dataArr = [
-                        'module' => $keys,
-                        'access' => $rows
-                    ];
+        $subModulesIds=[];
+        $modulesIds=[];
 
-                    array_push($customModules,$dataArr);
-                }
-            
-            }
-            
-            $permission = Permissions::where('_id', $id)
+        if($request->has('selectedSubmoduleIds')){
+            $subModulesIds=json_encode($request->selectedSubmoduleIds);
+        }
+
+        if($request->has('selectedModuleIds')){
+            $modulesIds=json_encode($request->selectedModuleIds);
+        }
+
+       
+       
+       
+        $permission = Permissions::where('_id', $id)
             ->update([
                 'project_id' => $request->projects,
-                'portal_id' => $row,
-                'role_id' => $request->role[$key],
-                'module_permissions' => json_encode($customModules),
+                'portal_id' => $request->portal,
+                'role_id' => $request->role,
+                'module_permissions' => $modulesIds,
+                'submodule_permissions'=>$subModulesIds,
                 'updated_at' => now(),
             ]);
 
-        }
+        // foreach($request->portal as $key => $row){
+            
+        //     foreach($request->modules[$key] as $keys => $rows){
+        //         if($rows != 'on'){
+        //             $dataArr = [
+        //                 'module' => $keys,
+        //                 'access' => $rows
+        //             ];
+
+        //             array_push($customModules,$dataArr);
+        //         }
+            
+        //     }
+            
+        //     $permission = Permissions::where('_id', $id)
+        //     ->update([
+        //         'project_id' => $request->projects,
+        //         'portal_id' => $row,
+        //         'role_id' => $request->role[$key],
+        //         'module_permissions' => json_encode($customModules),
+        //         'updated_at' => now(),
+        //     ]);
+
+        // }
 
         if($permission){
             
